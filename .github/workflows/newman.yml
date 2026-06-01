@@ -25,30 +25,57 @@ jobs:
       - name: Ensure reports directory exists
         run: mkdir -p reports
 
+      - name: Verify dependencies installed
+        run: npm ls prism-cli newman wait-on spectral-cli
+
       - name: Lint OpenAPI contracts
         run: npm run lint:contracts
 
-      - name: Start Prism mock servers
+      - name: Kill any processes on ports 4010 and 4011
+        run: |
+          pkill -f "prism" || true
+          sleep 1
+
+      - name: Start Prism mock servers with longer delay
         run: |
           npm run mock:camera > prism-camera.log 2>&1 &
+          sleep 5
           npm run mock:vision > prism-vision.log 2>&1 &
-          sleep 3
-          echo "Mock servers started"
+          sleep 5
+          echo "All mock servers started"
+          ps aux | grep prism || true
 
-      - name: Wait for mock servers
-        run: npx wait-on http://localhost:4010/health http://localhost:4011/health --timeout 60000 --interval 1000
+      - name: Wait for mock servers with verbose output
+        run: |
+          echo "Waiting for Camera mock server on 4010..."
+          npx wait-on http://localhost:4010/health --timeout 90000 --interval 2000 --verbose
+          echo "Waiting for Vision mock server on 4011..."
+          npx wait-on http://localhost:4011/health --timeout 90000 --interval 2000 --verbose
 
       - name: Run Newman contract tests
-        run: npm run test:mock || true
-
-      - name: Check test results
+        continue-on-error: true
         run: |
-          echo "=== Checking reports directory ==="
+          echo "Starting Newman tests..."
+          npm run test:mock
+          echo "Newman tests completed"
+
+      - name: Check test results and logs
+        if: always()
+        run: |
+          echo "=== Process status ==="
+          ps aux | grep -E "prism|node" || true
+          echo ""
+          echo "=== Reports directory ==="
           ls -la reports/ || echo "Reports directory not found"
+          echo ""
           echo "=== Prism Camera logs ==="
           cat prism-camera.log || echo "Camera logs not found"
+          echo ""
           echo "=== Prism Vision logs ==="
           cat prism-vision.log || echo "Vision logs not found"
+          echo ""
+          echo "=== JUnit report ==="
+          cat reports/newman-report-mock.xml || echo "JUnit report not found"
 
       - name: Upload Newman reports
         if: always()
