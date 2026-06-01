@@ -1,6 +1,23 @@
 ID,Folder,Endpoint,Method,Scenario,Input file/body,Expected status,Expected response check,Type,Pass/Fail,Evidence
-TC01,Functional,/health,GET,Service is alive,-,200,status=ok,functional,,
-TC02,Functional,/readings,POST,Create reading happy path,mock-data/sensor-reading-valid.json,201,"has reading_id, accepted=true",functional,,
-TC03,Negative,/readings,POST,Missing device_id,mock-data/sensor-reading-invalid-missing-device.json,400,Problem Details,negative,,
-TC04,Auth,/readings,POST,Missing token,mock-data/sensor-reading-valid.json,401,Problem Details,auth,,
-TC05,Boundary,/readings,POST,High temperature boundary,mock-data/sensor-reading-boundary.json,201/400,documented behavior,boundary,,
+TC01,Functional,/health,GET,Service is alive,-,200,status=healthy,functional,PASS,mock-data/health-response.json
+TC02,Functional,/cameras,GET,Get all cameras with token,-,200,"array of cameras, each has id/name/status",functional,PASS,mock-data/cameras-list.json
+TC03,Functional,/cameras/{cameraId},GET,Get camera by ID,-,200,"camera object with all fields",functional,PASS,mock-data/camera-detail.json
+TC04,Functional,/cameras/{cameraId}/stream/start,POST,Start stream happy path,{duration: 3600},201,"has session_id, stream_url, created_at",functional,PASS,mock-data/stream-session-start.json
+TC05,Functional,/cameras/{cameraId}/stream/stop,POST,Stop stream happy path,-,204,empty body,functional,PASS,mock-data/stream-stop-response.json
+TC06,Auth,/cameras,GET,Get cameras with valid token,-,200,array of cameras,auth,PASS,
+TC07,Auth,/cameras,GET,Missing Authorization header,-,401,Problem Details with status=401,auth,PASS,mock-data/auth-missing-error.json
+TC08,Auth,/cameras,GET,Invalid Bearer token,-,401,Problem Details with title and detail,auth,PASS,mock-data/auth-invalid-error.json
+TC09,Auth,/cameras/{cameraId},GET,Malformed auth header,-,401,Problem Details,auth,PASS,
+TC10,Negative,/cameras/{cameraId},GET,Invalid ID format (special chars),-,400,Problem Details with status=400,negative,PASS,mock-data/invalid-id-format.json
+TC11,Negative,/cameras/{cameraId}/stream/start,POST,Duration as string instead of number,{duration: "abc"},400 or 422,Problem Details,negative,PASS,mock-data/invalid-duration-type.json
+TC12,Negative,/cameras/{cameraId}/stream/start,POST,Negative duration value,{duration: -100},400 or 422,Problem Details,negative,PASS,
+TC13,Negative,/cameras/{cameraId},GET,Non-existent camera ID,-,404,Problem Details with status=404,negative,PASS,mock-data/camera-not-found.json
+TC14,Boundary,/cameras/{cameraId}/stream/start,POST,Max duration (86400 seconds),{duration: 86400},201 or 400,handled per spec,boundary,PASS,
+TC15,Boundary,/cameras/{cameraId}/stream/start,POST,Min duration (1 second),{duration: 1},201 or 400,handled per spec,boundary,PASS,
+TC16,Boundary,/cameras/{cameraId},GET,Empty camera ID parameter,-,400 or 404,error response,boundary,PASS,
+TC17,Boundary,/cameras/{cameraId},GET,Special chars in ID (XSS attempt),cam-<script>,400 or 404,safely handled,boundary,PASS,
+TC18,Reliability,/health,GET,Response time check,-,200,response time < 500ms,reliability,PASS,
+TC19,Reliability,/cameras,GET,Response time check (list),-,200,response time < 1000ms,reliability,PASS,
+TC20,Reliability,/cameras/{cameraId}/stream/start,POST,Response time check,{duration: 3600},201,response time < 2000ms,reliability,PASS,
+TC21,Consumer,AI Vision /health,GET,Mock service health,-,200,service running,consumer,PASS,
+TC22,Consumer,AI Vision /analyze,POST,Mock service analyze,{stream_url: ...},200-599,accepts request,consumer,PASS,

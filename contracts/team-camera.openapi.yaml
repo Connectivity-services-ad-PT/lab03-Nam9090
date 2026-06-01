@@ -1,0 +1,324 @@
+openapi: 3.1.0
+info:
+  title: Camera Stream Service - Smart Campus API
+  description: |
+    API cung cấp khả năng quản lý và truy xuất luồng dữ liệu video từ hệ thống Camera trong Smart Campus. 
+    Hỗ trợ các dịch vụ AI Vision và Analytics kết nối để phân tích hình ảnh.
+  version: 1.0.0
+  contact:
+    name: Trần Đình Nam (Nam9090)
+    email: nam.nd.2026@campus.edu.vn
+
+servers:
+  - url: http://localhost:4010
+    description: Mock Server phục vụ bài thực hành Lab 03
+
+tags:
+  - name: Cameras
+    description: Các API liên quan đến quản lý thiết bị Camera và truyền luồng video (Stream)
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Kiểm tra trạng thái sức khỏe của service
+      operationId: healthCheck
+      tags:
+        - Cameras
+      security: []
+      responses:
+        '200':
+          description: Service đang hoạt động
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+
+  /cameras:
+    get:
+      summary: Lấy danh sách Camera
+      description: Trả về danh sách tất cả các camera đang hoạt động trong hệ thống Smart Campus để Consumer lựa chọn.
+      operationId: getAllCameras
+      tags:
+        - Cameras
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách camera được lấy thành công.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Camera'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /cameras/{cameraId}:
+    parameters:
+      - $ref: '#/components/parameters/cameraId'
+    get:
+      summary: Lấy chi tiết thông tin Camera
+      description: Truy xuất thông tin cấu hình chi tiết phần cứng, vị trí lắp đặt và trạng thái hiện tại của một Camera cụ thể qua ID.
+      operationId: getCameraById
+      tags:
+        - Cameras
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Thông tin chi tiết của Camera.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Camera'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /cameras/{cameraId}/stream/start:
+    post:
+      summary: Khởi tạo luồng dữ liệu (Stream)
+      description: Yêu cầu hệ thống thiết lập kết nối phần cứng và sinh mã URL truyền luồng trực tuyến (RTSP) phục vụ cho Consumer xử lý AI.
+      operationId: startCameraStream
+      tags:
+        - Cameras
+      parameters:
+        - $ref: '#/components/parameters/cameraId'
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                duration:
+                  type: integer
+                  description: Thời gian stream tính bằng giây (mặc định 3600)
+                  example: 3600
+      responses:
+        '201':
+          description: Khởi tạo phiên stream thành công.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột - Camera đã đạt giới hạn kết nối hoặc đang bảo trì.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /cameras/{cameraId}/stream/stop:
+    post:
+      summary: Dừng luồng dữ liệu
+      description: Gửi yêu cầu giải phóng phiên truyền luồng video hiện tại của camera nhằm mục đích tiết kiệm băng thông mạng của khu vực Campus.
+      operationId: stopCameraStream
+      tags:
+        - Cameras
+      parameters:
+        - $ref: '#/components/parameters/cameraId'
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Đã dừng luồng và giải phóng tài nguyên thành công.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token xác thực dạng JWT
+
+  parameters:
+    cameraId:
+      name: cameraId
+      in: path
+      required: true
+      description: Mã định danh duy nhất của Camera
+      schema:
+        type: string
+        pattern: '^cam-[a-zA-Z0-9]+$'
+        example: "cam-7790"
+
+  schemas:
+    Camera:
+      type: object
+      required:
+        - id
+        - name
+        - status
+      properties:
+        id:
+          type: string
+          example: "cam-7790"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "Camera Khu Vực Sảnh A1"
+        location:
+          type: string
+          example: "Zone A - Gate 1"
+        status:
+          type: string
+          enum: [active, inactive, maintenance]
+          example: "active"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-05-20T10:00:00Z"
+
+    StreamSession:
+      type: object
+      required:
+        - session_id
+        - stream_url
+        - created_at
+      properties:
+        session_id:
+          type: string
+          example: "sess-abc-123"
+        stream_url:
+          type: string
+          format: uri
+          example: "rtsp://stream.smartcampus.vn/live/cam-7790"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-20T10:05:00Z"
+        expires_at:
+          type: string
+          format: date-time
+          example: "2026-05-20T11:05:00Z"
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "https://api.smartcampus.vn/probs/conflict"
+        title:
+          type: string
+          example: "Xung đột tài nguyên"
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          example: 409
+        detail:
+          type: string
+          example: "Camera đã đạt giới hạn kết nối hoặc đang bảo trì."
+        instance:
+          type: string
+          example: "/cameras/cam-7790/stream/start"
+
+  responses:
+    BadRequest:
+      description: Yêu cầu không hợp lệ - tham số sai định dạng hoặc thiếu trường bắt buộc.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.smartcampus.vn/probs/bad-request"
+            title: "Yêu cầu không hợp lệ"
+            status: 400
+            detail: "Tham số cameraId không hợp lệ"
+            instance: "/cameras/invalid-id"
+
+    Unauthorized:
+      description: Không có xác thực hoặc token không hợp lệ.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.smartcampus.vn/probs/unauthorized"
+            title: "Chưa xác thực"
+            status: 401
+            detail: "Token không hợp lệ hoặc hết hạn"
+            instance: "/cameras"
+
+    Forbidden:
+      description: Không có quyền truy cập tài nguyên.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.smartcampus.vn/probs/forbidden"
+            title: "Cấm truy cập"
+            status: 403
+            detail: "Bạn không có quyền truy cập tài nguyên này"
+            instance: "/cameras/cam-7790"
+
+    NotFound:
+      description: Không tìm thấy tài nguyên yêu cầu.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.smartcampus.vn/probs/not-found"
+            title: "Không tìm thấy"
+            status: 404
+            detail: "Camera với ID cam-9999 không tồn tại"
+            instance: "/cameras/cam-9999"
+
+    InternalError:
+      description: Lỗi hệ thống nội bộ.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.smartcampus.vn/probs/internal-error"
+            title: "Lỗi hệ thống"
+            status: 500
+            detail: "Lỗi nội bộ máy chủ"
+            instance: "/cameras"

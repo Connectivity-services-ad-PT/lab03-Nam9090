@@ -1,0 +1,855 @@
+{
+  "info": {
+    "name": "FIT4110_lab03_camera_stream",
+    "description": "Camera Stream Service - Smart Campus API Testing Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01_Functional",
+      "description": "Kiểm thử luồng chạy đúng (Happy Path)",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has status property\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"status\");",
+                  "    pm.expect(json.status).to.equal(\"healthy\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Cameras",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "pm.test(\"Response has correct structure\", function () {",
+                  "    const json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.expect(json[0]).to.have.property('id');",
+                  "        pm.expect(json[0]).to.have.property('name');",
+                  "        pm.expect(json[0]).to.have.property('status');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Camera By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-7790",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-7790"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has required properties\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('name');",
+                  "    pm.expect(json).to.have.property('status');",
+                  "    pm.expect(json.id).to.equal('cam-7790');",
+                  "});",
+                  "pm.test(\"Status is valid enum\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(['active', 'inactive', 'maintenance']).to.include(json.status);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start Camera Stream",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": 3600\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-7790/stream/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-7790", "stream", "start"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response has session_id and stream_url\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('session_id');",
+                  "    pm.expect(json).to.have.property('stream_url');",
+                  "    pm.expect(json).to.have.property('created_at');",
+                  "});",
+                  "pm.test(\"stream_url is valid format\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.stream_url).to.include('rtsp://');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stop Camera Stream",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-7790/stream/stop",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-7790", "stream", "stop"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 204\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02_Auth",
+      "description": "Kiểm thử khi có token đúng, thiếu token, hoặc token sai",
+      "item": [
+        {
+          "name": "Get Cameras with Valid Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 with valid token\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Cameras without Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cameras",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 without token\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Response follows ProblemDetails format\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('status');",
+                  "    pm.expect(json.status).to.equal(401);",
+                  "    pm.expect(json).to.have.property('detail');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Cameras with Invalid Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid-token-xyz"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 with invalid token\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Error response structure is correct\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('type');",
+                  "    pm.expect(json).to.have.property('title');",
+                  "    pm.expect(json).to.have.property('detail');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Camera with Malformed Auth Header",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "InvalidFormat token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-7790",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-7790"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 for malformed auth\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03_Negative",
+      "description": "Kiểm thử truyền sai kiểu dữ liệu, thiếu trường bắt buộc (nhận về lỗi 400/422)",
+      "item": [
+        {
+          "name": "Get Camera with Invalid ID Format",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras/invalid@#$",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "invalid@#$"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 for invalid ID\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error follows ProblemDetails structure\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('status');",
+                  "    pm.expect(json.status).to.be.within(400, 599);",
+                  "    pm.expect(json).to.have.property('detail');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start Stream with Invalid Duration Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": \"not-a-number\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-7790/stream/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-7790", "stream", "start"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 for invalid type\", function () {",
+                  "    const status = pm.response.code;",
+                  "    pm.expect([400, 422]).to.include(status);",
+                  "});",
+                  "pm.test(\"Error response is ProblemDetails\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('type');",
+                  "    pm.expect(json).to.have.property('status');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start Stream with Negative Duration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": -100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-7790/stream/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-7790", "stream", "start"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code indicates error\", function () {",
+                  "    const status = pm.response.code;",
+                  "    pm.expect(status).to.be.within(400, 599);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Non-existent Camera",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-99999",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-99999"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Error response has correct structure\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('status');",
+                  "    pm.expect(json.status).to.equal(404);",
+                  "    pm.expect(json).to.have.property('detail');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04_Boundary_Reliability",
+      "description": "Kiểm thử các giá trị biên",
+      "item": [
+        {
+          "name": "Start Stream with Maximum Duration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": 86400\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-7790/stream/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-7790", "stream", "start"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Request with max duration succeeds or returns appropriate error\", function () {",
+                  "    const status = pm.response.code;",
+                  "    pm.expect(status).to.be.oneOf([201, 400, 409]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start Stream with Minimum Duration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-7790/stream/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-7790", "stream", "start"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Request with min duration succeeds or returns appropriate error\", function () {",
+                  "    const status = pm.response.code;",
+                  "    pm.expect(status).to.be.oneOf([201, 400, 409]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Camera with Empty ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras/",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", ""]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Empty ID returns error\", function () {",
+                  "    const status = pm.response.code;",
+                  "    pm.expect(status).to.be.within(400, 599);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Cameras with Special Characters in ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-with-<script>alert",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-with-<script>alert"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Special characters handled safely\", function () {",
+                  "    const status = pm.response.code;",
+                  "    pm.expect(status).to.be.within(400, 404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05_Consumer_side_Smoke",
+      "description": "Gọi sang Mock URL của service phụ thuộc (AI Vision)",
+      "item": [
+        {
+          "name": "Call AI Vision Health Check (Mock)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{aiVisionMockUrl}}/health",
+              "host": ["{{aiVisionMockUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"AI Vision mock server is healthy\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Call AI Vision Analyze Endpoint (Mock)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stream_url\": \"rtsp://stream.smartcampus.vn/live/cam-7790\",\n  \"analysis_type\": \"object_detection\"\n}"
+            },
+            "url": {
+              "raw": "{{aiVisionMockUrl}}/analyze",
+              "host": ["{{aiVisionMockUrl}}"],
+              "path": ["analyze"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"AI Vision analyze endpoint responds\", function () {",
+                  "    const status = pm.response.code;",
+                  "    pm.expect(status).to.be.within(200, 599);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06_Local_only_NonFunctional",
+      "description": "Kiểm thử hiệu năng/thời gian phản hồi (chỉ áp dụng khi chạy local)",
+      "item": [
+        {
+          "name": "Health Check Response Time",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Health check response time < 500ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Cameras Response Time",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cameras",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Get cameras response time < 1000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start Stream Response Time",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": 3600\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cameras/cam-7790/stream/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["cameras", "cam-7790", "stream", "start"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Start stream response time < 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    },
+    {
+      "key": "teamName",
+      "value": ""
+    },
+    {
+      "key": "aiVisionMockUrl",
+      "value": ""
+    }
+  ]
+}
