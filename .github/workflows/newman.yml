@@ -1,81 +1,79 @@
 name: Newman Contract Tests
 
 on:
-push:
-branches: [ "main" ]
-pull_request:
-branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-newman:
-runs-on: ubuntu-latest
+  newman:
+    runs-on: ubuntu-latest
 
-```
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Setup Node.js
-    uses: actions/setup-node@v4
-    with:
-      node-version: "20"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-  - name: Install dependencies
-    run: npm install
+      - name: Install dependencies
+        run: npm install
 
-  - name: Ensure reports directory exists
-    run: mkdir -p reports
+      - name: Ensure reports directory exists
+        run: mkdir -p reports
 
-  - name: Lint OpenAPI contracts
-    run: npm run lint:contracts
+      - name: Lint OpenAPI contracts
+        run: npm run lint:contracts
 
-  - name: Start Prism mock servers
-    run: |
-      npm run mock:camera > prism-camera.log 2>&1 &
-      npm run mock:vision > prism-vision.log 2>&1 &
+      - name: Start Prism mock servers
+        run: |
+          npm run mock:camera > prism-camera.log 2>&1 &
+          npm run mock:vision > prism-vision.log 2>&1 &
 
-      sleep 20
+          sleep 20
 
-      echo "=== Camera log ==="
-      cat prism-camera.log || true
+          echo "=== Camera log ==="
+          cat prism-camera.log || true
 
-      echo "=== Vision log ==="
-      cat prism-vision.log || true
+          echo "=== Vision log ==="
+          cat prism-vision.log || true
 
-      echo "=== Running Node processes ==="
-      ps -ef | grep node || true
+          echo "=== Running Node processes ==="
+          ps -ef | grep node || true
 
-      echo "=== Listening Ports ==="
-      ss -tulpn || true
+          echo "=== Listening Ports ==="
+          ss -tulpn || true
 
-  - name: Wait for mock servers
-    run: |
-      npx wait-on tcp:4010 tcp:4011 --timeout 60000
+      - name: Wait for mock servers
+        run: |
+          npx wait-on tcp:4010 tcp:4011 --timeout 60000
 
-  - name: Run Newman contract tests
-    run: |
-      npm run test:mock || true
+      - name: Run Newman contract tests
+        run: |
+          npm run test:mock || true
 
-  - name: Show debug information
-    if: always()
-    run: |
-      echo "=== Reports directory ==="
-      ls -la reports || true
+      - name: Show debug information
+        if: always()
+        run: |
+          echo "=== Reports directory ==="
+          ls -la reports || true
 
-      echo "=== Camera log ==="
-      cat prism-camera.log || true
+          echo "=== Camera log ==="
+          cat prism-camera.log || true
 
-      echo "=== Vision log ==="
-      cat prism-vision.log || true
+          echo "=== Vision log ==="
+          cat prism-vision.log || true
 
-      echo "=== Listening ports ==="
-      ss -tulpn || true
+          echo "=== Listening ports ==="
+          ss -tulpn || true
 
-  - name: Upload Newman reports
-    if: always()
-    uses: actions/upload-artifact@v4
-    with:
-      name: newman-reports
-      path: reports/
-      if-no-files-found: ignore
-```
+      - name: Upload Newman reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-reports
+          path: reports/
+          if-no-files-found: ignore
